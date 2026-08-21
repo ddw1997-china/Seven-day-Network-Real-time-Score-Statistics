@@ -1,0 +1,8 @@
+PyQt6>=6.4.2
+requests>=2.32.4
+pandas>=3.0.5
+numpy>=1.26.4
+retry>=0.9.2
+openpyxl>=3.1.5
+xlsxwriter>=3.2.2
+urllib3>=2.3.0

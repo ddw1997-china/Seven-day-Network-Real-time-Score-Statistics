@@ -1,0 +1,204 @@
+{
+  "apk_info": {
+    "path": "C:\\Users\\ddw\\Desktop\\com.stub.StubApp.apk",
+    "package": "com.stub.StubApp",
+    "extract_dir": "com.stub.StubApp_extracted"
+  },
+  "manifest_analysis": {
+    "package": "com.stub.StubApp",
+    "activities": [
+      {
+        "name": ".MainActivity",
+        "isLauncher": true
+      },
+      {
+        "name": ".LoginActivity",
+        "intentFilters": [
+          "login"
+        ]
+      },
+      {
+        "name": ".WebActivity",
+        "hasWebView": true
+      }
+    ],
+    "permissions": [
+      "INTERNET",
+      "NETWORK_STATE"
+    ],
+    "usesCleartextTraffic": true
+  },
+  "smali_analysis": {},
+  "native_analysis": {
+    "libraries": [
+      {
+        "arch": "arm64-v8a",
+        "name": "libalicomphonenumberauthsdk_core.so",
+        "path": "com.stub.StubApp_extracted\\lib\\arm64-v8a\\libalicomphonenumberauthsdk_core.so"
+      },
+      {
+        "arch": "arm64-v8a",
+        "name": "libc++_shared.so",
+        "path": "com.stub.StubApp_extracted\\lib\\arm64-v8a\\libc++_shared.so"
+      },
+      {
+        "arch": "arm64-v8a",
+        "name": "libcrashsdk.so",
+        "path": "com.stub.StubApp_extracted\\lib\\arm64-v8a\\libcrashsdk.so"
+      },
+      {
+        "arch": "arm64-v8a",
+        "name": "libijkffmpeg.so",
+        "path": "com.stub.StubApp_extracted\\lib\\arm64-v8a\\libijkffmpeg.so"
+      },
+      {
+        "arch": "arm64-v8a",
+        "name": "libijkplayer.so",
+        "path": "com.stub.StubApp_extracted\\lib\\arm64-v8a\\libijkplayer.so"
+      },
+      {
+        "arch": "arm64-v8a",
+        "name": "libijksdl.so",
+        "path": "com.stub.StubApp_extracted\\lib\\arm64-v8a\\libijksdl.so"
+      },
+      {
+        "arch": "arm64-v8a",
+        "name": "libimagepipeline.so",
+        "path": "com.stub.StubApp_extracted\\lib\\arm64-v8a\\libimagepipeline.so"
+      },
+      {
+        "arch": "arm64-v8a",
+        "name": "libmain.so",
+        "path": "com.stub.StubApp_extracted\\lib\\arm64-v8a\\libmain.so"
+      },
+      {
+        "arch": "arm64-v8a",
+        "name": "libnative-filters.so",
+        "path": "com.stub.StubApp_extracted\\lib\\arm64-v8a\\libnative-filters.so"
+      },
+      {
+        "arch": "arm64-v8a",
+        "name": "libnative-imagetranscoder.so",
+        "path": "com.stub.StubApp_extracted\\lib\\arm64-v8a\\libnative-imagetranscoder.so"
+      },
+      {
+        "arch": "arm64-v8a",
+        "name": "libpns-2.13.12-LogOnlineStandardCuumRelease_alijtca_plus.so",
+        "path": "com.stub.StubApp_extracted\\lib\\arm64-v8a\\libpns-2.13.12-LogOnlineStandardCuumRelease_alijtca_plus.so"
+      },
+      {
+        "arch": "arm64-v8a",
+        "name": "libucrash-core.so",
+        "path": "com.stub.StubApp_extracted\\lib\\arm64-v8a\\libucrash-core.so"
+      },
+      {
+        "arch": "arm64-v8a",
+        "name": "libucrash.so",
+        "path": "com.stub.StubApp_extracted\\lib\\arm64-v8a\\libucrash.so"
+      },
+      {
+        "arch": "arm64-v8a",
+        "name": "libumeng-spy.so",
+        "path": "com.stub.StubApp_extracted\\lib\\arm64-v8a\\libumeng-spy.so"
+      },
+      {
+        "arch": "arm64-v8a",
+        "name": "libumonitor.so",
+        "path": "com.stub.StubApp_extracted\\lib\\arm64-v8a\\libumonitor.so"
+      },
+      {
+        "arch": "armeabi-v7a",
+        "name": "libalicomphonenumberauthsdk_core.so",
+        "path": "com.stub.StubApp_extracted\\lib\\armeabi-v7a\\libalicomphonenumberauthsdk_core.so"
+      },
+      {
+        "arch": "armeabi-v7a",
+        "name": "libc++_shared.so",
+        "path": "com.stub.StubApp_extracted\\lib\\armeabi-v7a\\libc++_shared.so"
+      },
+      {
+        "arch": "armeabi-v7a",
+        "name": "libcrashsdk.so",
+        "path": "com.stub.StubApp_extracted\\lib\\armeabi-v7a\\libcrashsdk.so"
+      },
+      {
+        "arch": "armeabi-v7a",
+        "name": "libijkffmpeg.so",
+        "path": "com.stub.StubApp_extracted\\lib\\armeabi-v7a\\libijkffmpeg.so"
+      },
+      {
+        "arch": "armeabi-v7a",
+        "name": "libijkplayer.so",
+        "path": "com.stub.StubApp_extracted\\lib\\armeabi-v7a\\libijkplayer.so"
+      },
+      {
+        "arch": "armeabi-v7a",
+        "name": "libijksdl.so",
+        "path": "com.stub.StubApp_extracted\\lib\\armeabi-v7a\\libijksdl.so"
+      },
+      {
+        "arch": "armeabi-v7a",
+        "name": "libimagepipeline.so",
+        "path": "com.stub.StubApp_extracted\\lib\\armeabi-v7a\\libimagepipeline.so"
+      },
+      {
+        "arch": "armeabi-v7a",
+        "name": "libmain.so",
+        "path": "com.stub.StubApp_extracted\\lib\\armeabi-v7a\\libmain.so"
+      },
+      {
+        "arch": "armeabi-v7a",
+        "name": "libnative-filters.so",
+        "path": "com.stub.StubApp_extracted\\lib\\armeabi-v7a\\libnative-filters.so"
+      },
+      {
+        "arch": "armeabi-v7a",
+        "name": "libnative-imagetranscoder.so",
+        "path": "com.stub.StubApp_extracted\\lib\\armeabi-v7a\\libnative-imagetranscoder.so"
+      },
+      {
+        "arch": "armeabi-v7a",
+        "name": "libpns-2.13.12-LogOnlineStandardCuumRelease_alijtca_plus.so",
+        "path": "com.stub.StubApp_extracted\\lib\\armeabi-v7a\\libpns-2.13.12-LogOnlineStandardCuumRelease_alijtca_plus.so"
+      },
+      {
+        "arch": "armeabi-v7a",
+        "name": "libucrash-core.so",
+        "path": "com.stub.StubApp_extracted\\lib\\armeabi-v7a\\libucrash-core.so"
+      },
+      {
+        "arch": "armeabi-v7a",
+        "name": "libucrash.so",
+        "path": "com.stub.StubApp_extracted\\lib\\armeabi-v7a\\libucrash.so"
+      },
+      {
+        "arch": "armeabi-v7a",
+        "name": "libumeng-spy.so",
+        "path": "com.stub.StubApp_extracted\\lib\\armeabi-v7a\\libumeng-spy.so"
+      },
+      {
+        "arch": "armeabi-v7a",
+        "name": "libumonitor.so",
+        "path": "com.stub.StubApp_extracted\\lib\\armeabi-v7a\\libumonitor.so"
+      }
+    ],
+    "encryption_libs": [],
+    "possible_obfuscation": false
+  },
+  "login_mechanism": {
+    "has_login_activities": false,
+    "login_activities": [],
+    "has_webview": false,
+    "webview_activities": []
+  },
+  "security_analysis": {
+    "uses_cleartext_traffic": true,
+    "network_security_config": null,
+    "has_encryption": false,
+    "possible_obfuscation": false
+  },
+  "recommendations": [
+    "应用允许明文流量传输，存在安全风险",
+    "建议使用动态调试或Hook技术进一步分析登录流程"
+  ]
+}

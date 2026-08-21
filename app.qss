@@ -1,0 +1,446 @@
+QPushButton{
+    color:white
+}
+QPushButton:disabled{
+    color:gray
+}
+QLabel{
+    color:white
+}
+QLabel#rule_description{
+    color:rgba(194,194,194,0.8);
+    font-size: 14px;
+}
+QLabel#status_label{
+    color:rgba(194,194,194,0.8);
+    font-size: 12px;
+}
+*{
+    background-color: rgba(255, 0, 0, 0);
+}
+#title{
+    font-size:20px;font-weight:bold;
+}
+
+#title-bar QPushButton{
+    background-color: rgba(255, 0, 0, 0);
+    border: 0px solid rgba(0, 0, 0, 50);
+    border-radius: 0px;
+    padding: 5px;
+}
+#title-bar QPushButton:hover{
+    background-color: rgba(255, 255, 255, 50);
+}
+#title-bar QPushButton:pressed{
+    background-color: rgba(255, 255, 255, 80);
+}
+#left_widget {
+    background-color: rgba(0, 0, 0, 0.1);
+    /*border-right:2px solid white*/
+}
+/*#logo_group*/
+QLineEdit{
+    /* rgba(255, 255,255, 0.5)border-bottom:2px solid rgba(155, 155, 155, 0.8);*/
+    background-color: rgba(255, 255,255, 0.1);
+
+    border-top: transparent;
+    border-left: transparent;
+    border-right: transparent;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.5);
+    color: rgba(255, 255,255, 1);
+
+}
+QLineEdit::placeholder { color: white; }
+#right_widget {
+    background-color: rgba(0, 0, 0, 0.2);
+    /*border-bottom:2px solid rgba(155, 155, 155, 0.8);*/
+    /*border-right:2px solid rgba(155, 155, 155, 0.8);*/
+}
+#right_widget QPushButton {
+    background-color: rgba(255, 255, 255, 0);
+}
+#right_widget QPushButton:hover {
+    background-color: rgba(255, 255, 255, 50);
+}
+#right_widget QPushButton:pressed {
+    background-color: rgba(255, 255, 255, 80);
+}
+#left_widget QPushButton {
+    /*font-size:20px;*/
+    /*font-weight:bold;*/
+    background-color: rgba(255, 255, 255, 0);
+    border: 0px solid rgba(0, 0, 0, 50);
+    border-radius: 0px;
+    padding: 5px;
+}
+#left_widget QPushButton:hover {
+    background-color: rgba(255, 255, 255, 50);
+}
+#left_widget QPushButton:pressed {
+    background-color: rgba(255, 255, 255, 80);
+}
+#left_widget QPushButton[selected="true"] {
+    background-color: rgba(0, 0, 0, 0.3);
+}
+#qitian_tab QLabel{
+    font-size:16px;
+}
+
+QGroupBox#class_group{
+    border:none;
+}
+QGroupBox#logo_group{
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 5px;
+    margin-top:5px;
+}
+QGroupBox#rule_group,#a_col_group,#b_col_group,#file_group{
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 5px;
+    margin-top:5px;
+}
+QGroupBox#rule_group::title,#a_col_group::title,#b_col_group::title,#file_group::title {
+    color:white;
+    margin-top:-8px;
+}
+
+QGroupBox#logo_group::title {
+    subcontrol-origin: margin;
+    subcontrol-position: top center; /* position at the top center */
+    font-size:16px;
+    font-weight:normal;
+    color:rgba(255,255,255,1)
+}
+QGroupBox#class_group::title {
+    subcontrol-origin: margin;
+    subcontrol-position: top left; /* position at the top center */
+    padding: 3px;
+    color:rgba(255,255,255,1)
+    /* background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                                      stop: 0 #FF0ECE, stop: 1 #FFFFFF);*/
+}
+QGroupBox::indicator:checked {
+    image: url(./app/images/checkbox_checked.png);
+}
+QFormLayout{
+    font-size:12px;
+}
+QCheckBox {
+    spacing: 5px;
+    font-size:12px;
+    color: #FFFFFF;
+
+}
+
+QCheckBox::indicator {
+    width: 20px;
+    height: 20px;
+    /*border: 1px solid rgba(255,255,255,0.1);*/
+}
+QCheckBox::indicator:unchecked {
+    image: url(./app/images/checkbox_unchecked.png);
+}
+QCheckBox::indicator:checked {
+    image: url(./app/images/checkbox_checked.png);
+}
+#subject_combo{
+    background-color: rgba(255, 255, 255, 0);
+    border-bottom:1px solid rgba(174,174,174,0.5);
+    border-radius: 0;
+    padding-left: 10px;
+    font-size:12pt;
+}
+#excelTools *{
+    background-color: rgba(255, 255, 255, 0);
+}
+QTabWidget::pane { /* The tab widget frame */
+    border-top: 1px solid #C2C7CB;
+    /*top: -0.5em;*/
+}
+
+QTabWidget::tab-bar {
+
+    left: 10px; /* move to the right by 5px */
+    color:black
+}
+
+/* Style the tab using the tab sub-control. Note that
+    it reads QTabBar _not_ QTabWidget */
+QTabBar::tab {
+    background: rgba(255,255,255,0.1);
+    border: 2px solid #C4C4C3;
+    border-bottom-color: #C2C7CB; /* same as the pane color */
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+    min-width: 8ex;
+    padding: 2px;
+    color:white
+}
+
+QTabBar::tab:selected, QTabBar::tab:hover {
+    background: rgba(0,0,0,0.5);
+}
+
+QTabBar::tab:selected {
+
+    border-color: #9B9B9B;
+    border-bottom-color: #C2C7CB; /* same as pane color */
+}
+
+QTabBar::tab:!selected {
+    margin-top: 2px; /* make non-selected tabs look smaller */
+}
+
+
+QWidget#SplitExcel,#fill_tab ,#view_tab{
+	background-color:rgba(255, 255, 255, 0);/*设置内用窗口背景色*/
+}
+/*#excelTools*/
+QComboBox{
+    color: rgb(255, 255, 255);
+    background-color: rgba(255, 255, 255, 0);
+    border-bottom:1px solid rgba(174,174,174,0.5);
+    border-radius: 0;
+    padding-left: 10px;
+    font-size:10pt;
+}
+/*QComboBox::drop-down { background: transparent;}*/
+/* 下拉后，整个下拉窗体样式 */
+QComboBox QAbstractItemView {
+    outline: 1px solid gray;   /* 选定项的虚框 */
+    border: 1px solid yellow;   /* 整个下拉窗体的边框 */
+    color: white;
+    background-color: rgba(152, 152, 152, 0.8);   /* 整个下拉窗体的背景色 */
+    selection-background-color: red;   /* 整个下拉窗体被选中项的背景色 */
+}
+/* 下拉后，整个下拉窗体每项的样式 */
+QComboBox QAbstractItemView::item {
+    background-color: rgba(128, 128, 128, 0.5);  /* 项的高度（设置pComboBox->setView(new QListView());后，该项才起作用） */
+}
+
+/* 下拉后，整个下拉窗体越过每项的样式 */
+QComboBox QAbstractItemView::item:hover {
+    color: #FFFFFF;
+    background-color: gray;   /* 整个下拉窗体越过每项的背景色 */
+}
+
+#fill_tab QLabel{
+    font-size:12pt;
+}
+QTableWidget {
+
+   border: 1px solid #d3d3d3; /* 边框 */
+
+   selection-background-color: rgba(224,224,224,0.1); /* 选中项的背景色 */
+
+   selection-color: rgba(255,255,0,1); /* 选中项的文字颜色 */
+
+   gridline-color: #d3d3d3; /* 网格线颜色 */
+   color:white
+
+}
+#divide_tableview{
+   background-color: rgba(224,224,224,0.1);  /* 表格背景色 */
+
+   color: rgba(224,224,224,1); /* 表格文字颜色 */
+
+   /* padding-left: 4px; 文字左边距 */
+
+   border: 1px solid #d3d3d3; /* 表格边框 */
+
+   border-right: 1px solid #c0c0c0; /* 右侧边框，可调整以区分列 */
+   gridline-color: #d3d3d3; /* 网格线颜色 */
+}
+#divide_tableview QHeaderView::section {
+
+   background-color: rgba(224,224,224,0.1); /* 表头背景色 */
+   border: 1px solid #d3d3d3; /* 表头边框 */
+
+   border-right: 1px solid #c0c0c0; /* 右侧边框，可调整以区分列 */
+}
+#divide_tableview QTableCornerButton::section {
+    border: 1px solid #d3d3d3; /* 表格转角边框 */
+    background-color: rgba(224,224,224,0.1); /* 左上角角标的颜色 */
+
+}
+#divide_statedialog{
+    background-color: #3e4d52; /* 背景色 */
+    color: rgba(224,224,224,1); /* 文字颜色 */
+}
+#splitclass_tab *{
+    background-color: #3e4d52; /* 背景色 */
+    color: rgba(224,224,224,1); /* 文字颜色 */
+}
+#comparator_tab *{
+    background-color: #3e4d52; /* 背景色 */
+    color: rgba(224,224,224,1); /* 文字颜色 */
+}
+QInputDialog *{
+    background-color: #3e4d52; /* 背景色 */
+    color: rgba(224,224,224,1); /* 文字颜色 */
+}
+QTableView::item:selected{
+    background-color:rgba(125,160,225,0.4)
+}
+QTableWidget QHeaderView::section {
+
+   background-color: rgba(224,224,224,0.1); /* 表头背景色 */
+
+   color: rgba(224,224,224,1); /* 表头文字颜色 */
+
+   padding-left: 4px; /* 文字左边距 */
+
+   border: 1px solid #d3d3d3; /* 表头边框 */
+
+   border-right: 1px solid #c0c0c0; /* 右侧边框，可调整以区分列 */
+
+}
+QTableWidget QTableCornerButton::section {
+
+   background-color: rgba(224,224,224,0.1); /* 左上角角标的颜色 */
+
+   border: 0px;
+
+}
+/*----------------------------------滚动条-----------------------------------------------------*/
+QScrollBar:vertical{
+        background:rgba(110,110,110,0.2);
+        padding-top:20px;
+        padding-bottom:20px;
+        padding-left:1px;
+        padding-right:1px;
+        margin: 0px 0px 0px 0px;
+}
+
+QScrollBar::handle:vertical{
+        background:rgba(125,160,225,0.4);
+        border-radius:6px;
+        margin:1px 0px 1px 0px;
+        min-width:80px;
+        border:1px solid rgba(0,0,0,0.5)
+}
+
+QScrollBar::add-page:vertical{
+        background:rgba(110,110,110,0.5);
+}
+
+QScrollBar::sub-page:vertical{
+        background:rgba(110,110,110,0.5);
+}
+
+QScrollBar::up-arrow:vertical
+{
+      border-image:url(./app/images/up-arrow.png);
+}
+
+QScrollBar::down-arrow:vertical
+{
+      border-image:url(./app/images/down-arrow.png);
+}
+
+QScrollBar::add-line:vertical {
+      border: none;
+      background: none;
+}
+
+QScrollBar::sub-line:vertical {
+      border: none;
+      background: none;
+}
+
+
+QScrollBar:horizontal{
+        background:rgba(110,110,110,0.2);;
+        padding-top:0px;
+        padding-bottom:00px;
+        padding-left:0px;
+        padding-right:0px;
+        margin: 0px 0px 0px 0px;
+}
+
+QScrollBar::handle:horizontal{
+        background:rgba(125,160,225,0.4);
+        border-radius:6px;
+        margin:1px 1px 1px 1px;
+        min-width:80px;
+}
+
+QScrollBar::add-page:horizontal{
+        background:rgba(110,110,110,0.5);
+}
+
+QScrollBar::sub-page:horizontal{
+        background:rgba(110,110,110,0.5);
+}
+
+QScrollBar::right-arrow:horizontal{
+      border-image:url(./app/images/right-arrow.png);
+}
+QScrollBar::left-arrow:horizontal{
+      border-image:url(./app/images/left-arrow.png);
+}
+QScrollBar::add-line:horizontal {
+      border: none;
+      background: none;
+}
+
+QScrollBar::sub-line:horizontal {
+      border: none;
+      background: none;
+}
+QToolTip{
+    color:rgba(255,255,255,1);
+    background-color: rgba(62,77,82,0.1)
+}
+QMessageBox {
+    background-color: #3e4d52;/*red*/
+}
+#examSetup QMessageBox {
+    background-color: #3e4d52;/*red*/
+}
+#sum_table QMessageBox {
+    background-color: #3e4d52;/*red*/
+}
+#divide_class QMessageBox {
+    background-color: #3e4d52;/*red*/
+}
+QMenu{
+    background-color: rgba(58,56,56,1)
+}
+
+QMenu::item {
+    color:rgba(255, 255, 255, 1);
+    padding: 2px 25px 2px 20px;
+    border: 1px solid transparent; /* reserve space for selection border */
+}
+QMenu::item:hover{
+    color:rgba(28, 65, 175, 1);
+    padding: 2px 25px 2px 20px;
+    border: 1px solid transparent; /* reserve space for selection border */
+}
+QMenu::item:selected {
+    border-color: darkblue;
+    background: rgba(100, 100, 100, 150);
+}
+/*
+#dialog {
+    background-color: #3e4d52
+}
+*/
+QProgressBar {
+    border: 2px solid grey;
+    border-radius: 5px;
+    text-align: center ;
+    color:white
+}
+QProgressBar::chunk {
+    background-color: rgba(50, 128, 50, 1);
+    width: 10px;
+    margin: 0.5px;
+}
+QRadioButton {
+    color:white;
+}
+QRadioButton::indicator {
+    color:white;
+}

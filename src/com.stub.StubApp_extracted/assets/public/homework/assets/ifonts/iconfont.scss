@@ -1,0 +1,102 @@
+/*自定义图标 added by leo 201703081744002*/
+
+$iconfont-path:"../assets/ifonts";
+
+@font-face {
+  font-family: 'Ionicons';
+  src:url('#{$iconfont-path}/iconfont.woff') format('woff'),
+  url('#{$iconfont-path}/iconfont.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'Ionicons';
+  src:url('#{$iconfont-path}/icon.woff') format('woff'),
+  url('#{$iconfont-path}/icon.ttf') format('truetype');
+}
+
+.ion-md-close:before,
+.ion-ios-close:before,
+.ion-wp-close:before,
+.ion-md-close-outline:before,
+.ion-ios-close-outline:before,
+.ion-wp-close-outline:before {
+  content: "\e701";
+}
+
+// .ion-arrow-ios-foward:before {
+//   content: "\b603";
+// }
+
+.ion-ios-arrow-back:before {
+  content: "\e604";
+}
+
+.ion-ios-myclass:before {
+  content: "\e80f";
+}
+
+.ion-ios-qiehuan:before {
+  content: "\e810";
+}
+
+.ion-ios-shengxu:before {
+  content: "\e80e";
+}
+
+.ion-ios-jiangxu:before {
+  content: "\e80d";
+}
+
+
+
+
+
+
+$ionicons-svg-path: "../assets/icons";
+
+.ion-ios-sort,
+.ion-ios-funnel-outline,
+.ion-ios-new,
+.ion-ios-fullscreen,
+.ion-ios-create-homework,
+.ion-ios-screen {
+  width: 1.2em;
+  height: 1.2em;
+  padding: 0 !important;
+
+  &::before {
+    content: '';
+    height: 100%;
+    width: 100%;
+    vertical-align: middle;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center center;
+  }
+}
+.ion-ios-fullscreen{
+
+}
+
+.ion-ios-sort:before {
+  background-image:url('#{$ionicons-svg-path}/sort.svg');
+}
+
+.ion-ios-funnel-outline:before {
+  background-image:url('#{$ionicons-svg-path}/screen.svg');
+}
+
+.ion-ios-screen:before {
+  background-image:url('#{$ionicons-svg-path}/favorite-screen.svg');
+}
+
+.ion-ios-new:before {
+  background-image: url('#{$ionicons-svg-path}/new.svg');
+}
+
+.ion-ios-create-homework:before {
+  background-image: url('#{$ionicons-svg-path}/create-homework.svg');
+}
+.ion-ios-fullscreen:before {
+  background-image: url('#{$ionicons-svg-path}/full-screen.svg');
+}
