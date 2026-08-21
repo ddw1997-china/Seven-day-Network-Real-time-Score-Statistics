@@ -1,5 +1,6 @@
 import json
 import os
+from typing import Optional
 from urllib.parse import unquote
 
 from PyQt6.QtWidgets import ( QPushButton, QMessageBox, QFileDialog, QProgressBar)
@@ -109,7 +110,7 @@ class QiTianApp(QObject):
 
 
 
-    def __init__(self,phone_str:str,pass_str:str,_subject:str,_classlist:list,_progressBar:QProgressBar,_seachbtn:QPushButton):
+    def __init__(self,phone_str:str,pass_str:str,_subject:str,_classlist:list[str],_progressBar:Optional[QProgressBar]=None,_seachbtn:Optional[QPushButton]=None):
         super().__init__()
         self.subject = _subject
         self.progressBar = _progressBar
@@ -730,6 +731,8 @@ class DataToExcel():
         self.downloadedClass = ""
         # 所有班级数据
         self.datas = []
+        # 数据下载线程
+        self.download_thread: Optional[DataDownloadThread] = None
 
 
     def classInit(self):
@@ -1040,6 +1043,6 @@ if __name__ == "__main__":
     # login_window = LoginWindow()
     # login_window.show()
     # sys.exit(app.exec())
-    qtApp = QiTianApp("数学",['A912','A913'],None,None)
+    qtApp = QiTianApp("","",_subject="数学",_classlist=['A912','A913'],_progressBar=None,_seachbtn=None)
     saveExcel = DataToExcel(qtApp.examName)
     saveExcel.run(qtApp,['A912','A913'])

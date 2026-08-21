@@ -1,4 +1,0 @@
-"use strict";(self.webpackChunkapp=self.webpackChunkapp||[]).push([[5227],{5227:function(v,a,e){e.r(a),e.d(a,{startStatusTap:function(){return E}});var d=e(5861),l=e(7757),s=e.n(l),o=e(1308),u=e(8416),c=e(5730),E=function(){var r=window;r.addEventListener("statusTap",function(){(0,o.f)(function(){var i=document.elementFromPoint(r.innerWidth/2,r.innerHeight/2);if(i){var n=(0,u.f)(i);n&&new Promise(function(_){return(0,c.c)(n,_)}).then(function(){(0,o.c)((0,d.Z)(s().mark(function _(){return s().wrap(function(t){for(;;)switch(t.prev=t.next){case 0:return n.style.setProperty("--overflow","hidden"),t.next=3,(0,u.s)(n,300);case 3:n.style.removeProperty("--overflow");case 4:case"end":return t.stop()}},_)})))})}})})};
-/*!
-     * (C) Ionic http://ionicframework.com - MIT License
-     */}}]);
