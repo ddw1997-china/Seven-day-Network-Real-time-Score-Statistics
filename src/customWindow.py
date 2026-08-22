@@ -97,6 +97,7 @@ class ContentWidget(QWidget):
     parent_ = None
     is_Ok = False
     qtApp = None
+    exam_name =None
     loginState = None
     form_data = None
     def __init__(self,_parent):
@@ -483,7 +484,7 @@ class ContentWidget(QWidget):
 
         # 表单布局 - 科目和班级选择
         form_layout = QFormLayout()
-        form_layout.setContentsMargins(0, 10, 0, 0)
+        form_layout.setContentsMargins(0, 2, 0, 0)
         form_layout.setVerticalSpacing(30)  # (10)
         form_layout.setHorizontalSpacing(15)
         # 表单的对齐
@@ -523,11 +524,20 @@ class ContentWidget(QWidget):
         school_label2.setTextFormat(Qt.TextFormat.RichText)
         school_label2.setObjectName("school_label")
         school_label2.setAlignment(Qt.AlignmentFlag.AlignLeft)
+        self.exam_name = QLabel("考试名称")
+
+        # 创建一个水平布局存放 school_label2 和 exam_name
+        school_layout = QHBoxLayout()
+        school_layout.addWidget(school_label2)
+        school_layout.addStretch()  # 可选：让内容靠左
+        school_layout.addWidget(self.exam_name)
+
         subject_label = QLabel("科目:")
         class_label = QLabel("班级:")
         class_label.setAlignment(Qt.AlignmentFlag.AlignTop)
+        # 添加到表单
+        form_layout.addRow(school_label1, school_layout)
 
-        form_layout.addRow(school_label1, school_label2)
         form_layout.addRow(subject_label, self.subject_combo)
         form_layout.addRow(None,self.classbox)#class_label, gridLayout
 
@@ -609,6 +619,7 @@ class ContentWidget(QWidget):
         参数:
             grade: 年级字符串，如 "7"（七年级）、"8"（八年级）、"9"（九年级）
         """
+        self.exam_name.setText(self.qtApp.examName)
         if grade != self.current_grade:
             self.create_class_checkboxes(grade)
             # 如果全选框已勾选，自动更新所有checkbox状态
