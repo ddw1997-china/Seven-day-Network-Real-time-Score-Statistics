@@ -156,6 +156,8 @@ class QiTianApp(QObject):
         self.getUserInfo()
     def selectExamList(self):
         self.successExamList = self.getExamList()
+        if(self.successExamList == False):
+            self.successExamList = self.getExamList2()
         print(self.successExamList,'-------------88successExamList----------')
         if self.successExamList == True:
             self.getUserInfo2()
@@ -450,6 +452,7 @@ class QiTianApp(QObject):
             print(exams_list)
 
             if not exams_list:
+                # self.getExamList2()
                 print("未找到考试数据")
                 return False
 
@@ -587,6 +590,65 @@ class QiTianApp(QObject):
         else:
             print("用户取消了选择")
             return False
+    def getExamList2(self):
+        """获取七天阅卷通知列表，通过PyQt6对话框让用户选择考试"""
+        url = "https://teacherapi.7net.cc/api/TeacherNotice/GetTeacherNoticeList"
+
+        payload = {
+            "pageIndex": 1,
+            "pageSize": "20",
+            "name": ""
+        }
+        headers = {
+            "Token": self.token,
+            "Version": "3.3.0",
+            "Content-Type": "application/json; charset=utf-8",
+            "Content-Length": "41",
+            "Host": "teacherapi.7net.cc",
+            "Connection": "Keep-Alive",
+            "Accept-Encoding": "gzip",
+            "User-Agent": "okhttp/3.10.0"
+        }
+
+        try:
+            response = requests.request("POST", url, json=payload, headers=headers, verify=False)
+            response.raise_for_status()
+
+            print('==================4.getExamList2:noticeId(首页中消息按钮)/name===============================')
+
+            # 解析响应数据
+            data_dict = response.json()
+            notices_list = data_dict.get("data", {}).get("singleNotices", [])
+
+            print(notices_list)
+
+            if not notices_list:
+                print("未找到考试数据")
+                return False
+
+            # 将数据结构转换为与 getExamList 兼容的格式
+            exams_list = []
+            for notice in notices_list:
+                if notice.get('noticeType') != 3:# 3是阅卷通知
+                    exams_list.append({
+                        "examGuid": notice.get("guid"),
+                        "examName": notice.get("name")
+                    })
+
+
+            # 创建PyQt6选择对话框
+            return self.showPyQtExamDialog(exams_list)
+
+        except requests.exceptions.RequestException as e:
+            print(f"网络请求失败: {e}")
+            return False
+        except ValueError as e:
+            print(f"JSON解析失败: {e}")
+            return False
+        except Exception as e:
+            print(f"获取考试列表时发生错误: {e}")
+            return False
+
     def getExamList1(self):
         """默认只获取最新考试"""
         url = "https://teacherapi.7net.cc/api/ExamAnalysisV2/GetTopThreeExam"
