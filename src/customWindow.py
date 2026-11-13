@@ -1,15 +1,17 @@
+import os
 import sys
 
 from PyQt6.QtCore import Qt, pyqtSignal, QSize, QDateTime
 from PyQt6.QtGui import QIcon, QAction, QPainter, QColor, QPixmap, QTextCursor
 from PyQt6.QtWidgets import QMainWindow, QWidget, QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QApplication, \
     QSystemTrayIcon, QMessageBox, QMenu, QStackedLayout, QGroupBox, QLineEdit, QGridLayout, QFormLayout, \
-    QComboBox, QButtonGroup, QCheckBox, QFileDialog, QDialog, QStyle, QProgressBar, QSizePolicy, QTextEdit
+    QComboBox, QButtonGroup, QCheckBox, QFileDialog, QDialog, QStyle, QProgressBar, QSizePolicy, QTextEdit, \
+    QListWidget, QListWidgetItem
 
 from app.src.aesEncrypt import aes_encrypt
 from app.src.excelTools import ExcelTools
 from app.src.loadQss import LoadQss
-from app.src.qitianApp import QiTianApp, DataToExcel
+from app.src.qitianApp import QiTianApp, DataToExcel, load_record_map
 from app.src.getLoginData import LoginSignal
 
 
@@ -92,6 +94,177 @@ class WindowTitleBar(QWidget):
         if event.button() == Qt.MouseButton.LeftButton and self.dragging:
             self.dragging = False
             # self.setCursor(Qt.CursorShape.OpenHandCursor)
+
+class AnswerImageDialog(QDialog):
+    """按科目、班级、题号选择要下载的答卷图片"""
+
+    def __init__(self, qtApp, subjects, class_names, checked_classes, subject_index, parent=None):
+        super().__init__(parent)
+        self.qtApp = qtApp
+        self.setWindowTitle("下载答卷图片")
+        self.setFixedSize(420, 620)
+        self.setStyleSheet(
+            "QDialog{background-color:#3e4d52;}"
+            "QLabel{color:white;font-size:11pt;}"
+            "QListWidget{background-color:rgba(255,255,255,20);color:white;border:1px solid rgba(255,255,255,60);border-radius:4px;font-size:11pt;}"
+            "QGroupBox{color:white;border:1px solid rgba(255,255,255,60);border-radius:4px;margin-top:10px;font-size:11pt;}"
+            "QGroupBox::title{subresource-origin:0 0;subcontrol-position:top left;padding:0 5px;left:10px;}"
+            "QCheckBox{color:white;font-size:11pt;}"
+            "QComboBox{color:white;background-color:rgba(255,255,255,20);border:1px solid rgba(255,255,255,60);border-radius:4px;padding:3px 8px;font-size:11pt;}"
+            "QComboBox QAbstractItemView{background-color:#3e4d52;color:white;selection-background-color:#5a6d73;}"
+            "QLineEdit{color:white;background-color:rgba(255,255,255,20);border:1px solid rgba(255,255,255,60);border-radius:4px;padding:3px 8px;font-size:11pt;}"
+            "QPushButton{border:1px solid rgba(255,255,255,160);border-radius:4px;padding:5px 16px;font-size:11pt;}"
+            "QPushButton:hover{background-color:rgba(255,255,255,40);}"
+        )
+
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(15, 15, 15, 15)
+        layout.setSpacing(10)
+
+        subject_row = QHBoxLayout()
+        subject_row.addWidget(QLabel("科目:"))
+        self.subject_combo = QComboBox()
+        self.subject_combo.addItems(subjects)
+        if 0 <= subject_index < self.subject_combo.count():
+            self.subject_combo.setCurrentIndex(subject_index)
+        subject_row.addWidget(self.subject_combo, 1)
+        layout.addLayout(subject_row)
+
+        class_group = QGroupBox("班级")
+        class_layout = QVBoxLayout(class_group)
+        self.select_all_classes = QCheckBox("全选")
+        class_layout.addWidget(self.select_all_classes)
+        self.class_list = QListWidget()
+        self.class_list.setFixedHeight(120)
+        class_layout.addWidget(self.class_list)
+        layout.addWidget(class_group)
+
+        th_group = QGroupBox("题号")
+        th_layout = QVBoxLayout(th_group)
+        self.select_all_ths = QCheckBox("全选")
+        th_layout.addWidget(self.select_all_ths)
+        self.th_list = QListWidget()
+        th_layout.addWidget(self.th_list)
+        layout.addWidget(th_group, 1)
+
+        records_row = QHBoxLayout()
+        records_row.addWidget(QLabel("记录文件:"))
+        self.records_edit = QLineEdit()
+        self.records_edit.setReadOnly(True)
+        self.records_edit.setPlaceholderText("选择 download_records.json")
+        records_row.addWidget(self.records_edit, 1)
+        self.records_button = QPushButton("浏览")
+        records_row.addWidget(self.records_button)
+        layout.addLayout(records_row)
+
+        button_row = QHBoxLayout()
+        button_row.addStretch()
+        self.cancel_button = QPushButton("取消")
+        self.download_button = QPushButton("开始下载")
+        button_row.addWidget(self.cancel_button)
+        button_row.addWidget(self.download_button)
+        layout.addLayout(button_row)
+
+        for name in class_names:
+            item = QListWidgetItem(name)
+            item.setFlags(item.flags() | Qt.ItemFlag.ItemIsUserCheckable)
+            item.setCheckState(
+                Qt.CheckState.Checked if name in checked_classes else Qt.CheckState.Unchecked
+            )
+            self.class_list.addItem(item)
+        if not checked_classes and self.class_list.count() > 0:
+            self.class_list.item(0).setCheckState(Qt.CheckState.Checked)
+
+        self.subject_combo.currentIndexChanged.connect(self.load_questions)
+        self.select_all_classes.stateChanged.connect(self.toggle_all_classes)
+        self.select_all_ths.stateChanged.connect(self.toggle_all_ths)
+        self.records_button.clicked.connect(self.choose_records_file)
+        self.cancel_button.clicked.connect(self.reject)
+        self.download_button.clicked.connect(self.accept)
+
+        self.load_questions()
+
+    def choose_records_file(self):
+        path, _ = QFileDialog.getOpenFileName(
+            self, "选择 download_records.json", "", "JSON 文件 (*.json)"
+        )
+        if path:
+            self.records_edit.setText(path)
+
+    def toggle_all_classes(self, state):
+        checked = state == Qt.CheckState.Checked.value
+        for i in range(self.class_list.count()):
+            self.class_list.item(i).setCheckState(
+                Qt.CheckState.Checked if checked else Qt.CheckState.Unchecked
+            )
+
+    def toggle_all_ths(self, state):
+        checked = state == Qt.CheckState.Checked.value
+        for i in range(self.th_list.count()):
+            self.th_list.item(i).setCheckState(
+                Qt.CheckState.Checked if checked else Qt.CheckState.Unchecked
+            )
+
+    def selected_classes(self):
+        return [
+            self.class_list.item(i).text()
+            for i in range(self.class_list.count())
+            if self.class_list.item(i).checkState() == Qt.CheckState.Checked
+        ]
+
+    def selected_ths(self):
+        return [
+            self.th_list.item(i).text()
+            for i in range(self.th_list.count())
+            if self.th_list.item(i).checkState() == Qt.CheckState.Checked
+        ]
+
+    def load_questions(self):
+        """按当前科目和第一个选中班级获取题号"""
+        classes = self.selected_classes()
+        if not classes:
+            self.th_list.clear()
+            return
+        try:
+            ths = self.qtApp.getQuestionList(self.subject_combo.currentText(), f"A{classes[0]}")
+        except Exception as e:
+            self.th_list.clear()
+            QMessageBox.warning(self, "错误", f"获取题号失败: {e}")
+            return
+        self.th_list.clear()
+        for th in ths:
+            item = QListWidgetItem(f"第{th}题")
+            item.setData(Qt.ItemDataRole.UserRole, th)
+            item.setFlags(item.flags() | Qt.ItemFlag.ItemIsUserCheckable)
+            item.setCheckState(Qt.CheckState.Checked)
+            self.th_list.addItem(item)
+
+    def accept(self):
+        if not self.selected_classes():
+            QMessageBox.warning(self, "提示", "请至少选择一个班级")
+            return
+        if not self.selected_ths():
+            QMessageBox.warning(self, "提示", "请至少选择一个题号")
+            return
+        records_path = self.records_edit.text().strip()
+        if not records_path or not os.path.isfile(records_path):
+            QMessageBox.warning(self, "提示", "请选择 download_records.json 文件")
+            return
+        super().accept()
+
+    def get_result(self):
+        ths = [
+            self.th_list.item(i).data(Qt.ItemDataRole.UserRole)
+            for i in range(self.th_list.count())
+            if self.th_list.item(i).checkState() == Qt.CheckState.Checked
+        ]
+        return (
+            self.subject_combo.currentText(),
+            self.selected_classes(),
+            ths,
+            self.records_edit.text().strip(),
+        )
+
 
 class ContentWidget(QWidget):
     parent_ = None
@@ -396,6 +569,43 @@ class ContentWidget(QWidget):
             saveExcel = DataToExcel(self.qtApp.examName)
             saveExcel.run(self.qtApp, selected_values)
 
+    def handle_download_images_clicked(self):
+        """按科目、班级、题号下载答卷图片"""
+        if self.qtApp is None or not getattr(self.qtApp, 'examGuid', ''):
+            QMessageBox.warning(self, '提示', '请先登录并选择考试')
+            return
+        class_names = [button.text() for button in self.button_group.buttons()]
+        if not class_names:
+            QMessageBox.warning(self, '提示', '没有可用班级')
+            return
+        checked_classes = [button.text() for button in self.button_group.buttons() if button.isChecked()]
+        subjects = [self.subject_combo.itemText(i) for i in range(self.subject_combo.count())]
+
+        dialog = AnswerImageDialog(
+            self.qtApp, subjects, class_names, checked_classes,
+            self.subject_combo.currentIndex(), self
+        )
+        if dialog.exec() != QDialog.DialogCode.Accepted:
+            return
+        subject, classes, ths, records_path = dialog.get_result()
+        if not classes or not ths:
+            QMessageBox.warning(self, '提示', '请至少选择一个班级和一个题号')
+            return
+
+        try:
+            record_map = load_record_map(records_path)
+        except Exception as e:
+            QMessageBox.warning(self, '提示', f'读取记录文件失败: {e}')
+            return
+
+        save_dir = QFileDialog.getExistingDirectory(self, "选择保存文件夹", "")
+        if not save_dir:
+            return
+
+        self.qtApp.subject = subject
+        datas = [{"_classCode": f"A{name}"} for name in classes]
+        self.qtApp.startAnswerImages(datas, save_dir, ths=ths, record_map=record_map)
+
 
     def handle_init_qtApp(self,logoinfo_):
         subject = self.subject_combo.currentText()
@@ -538,7 +748,24 @@ class ContentWidget(QWidget):
         # 添加到表单
         form_layout.addRow(school_label1, school_layout)
 
-        form_layout.addRow(subject_label, self.subject_combo)
+        # 下载答卷图片按钮
+        self.download_images_button = QPushButton('下载图片')
+        self.download_images_button.setFixedSize(110, 36)
+        self.download_images_button.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.download_images_button.setStyleSheet(
+            "QPushButton{border:1px solid rgba(255,255,255,150);border-radius:4px;font-size:12pt;}"
+            "QPushButton:hover{background-color:rgba(255,255,255,40);}"
+        )
+        self.download_images_button.clicked.connect(self.handle_download_images_clicked)
+
+        subject_row = QWidget()
+        subject_row_layout = QHBoxLayout()
+        subject_row_layout.setContentsMargins(0, 0, 0, 0)
+        subject_row_layout.addWidget(self.subject_combo)
+        subject_row_layout.addStretch()
+        subject_row_layout.addWidget(self.download_images_button)
+        subject_row.setLayout(subject_row_layout)
+        form_layout.addRow(subject_label, subject_row)
         form_layout.addRow(None,self.classbox)#class_label, gridLayout
 
 

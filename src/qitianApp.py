@@ -1,5 +1,8 @@
+import csv
 import json
 import os
+import threading
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Optional
 from urllib.parse import unquote
 
@@ -15,6 +18,36 @@ import urllib3
 from retry import retry
 
 urllib3.disable_warnings()
+
+IMAGE_UUID_RE = re.compile(r"/([0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12})\.")
+CROP_RE = re.compile(r"crop,x_(\d+),y_(\d+),w_(\d+),h_(\d+)")
+
+
+def image_key(url):
+    """提取图片的 UUID + 裁剪参数，用于跨接口匹配同一张图"""
+    if not url:
+        return None
+    match = IMAGE_UUID_RE.search(url)
+    if not match:
+        return None
+    crop = CROP_RE.search(url)
+    return match.group(1).lower(), crop.groups() if crop else None
+
+
+def load_record_map(path):
+    """读取 download_records.json，返回 {图片键: {'Id': ..., 'Guid': ...}}"""
+    with open(path, encoding="utf-8-sig") as f:
+        records = json.load(f)
+    mapping = {}
+    for record in records:
+        key = image_key(record.get("ImgUrl", ""))
+        if key:
+            mapping[key] = {
+                "Id": str(record.get("Id", "")),
+                "Guid": str(record.get("Guid", "")),
+            }
+    return mapping
+
 
 class DataDownloadThread(QThread):
     """数据下载线程，在后台执行数据下载，避免阻塞UI线程"""
@@ -79,11 +112,125 @@ class DataDownloadThread(QThread):
                 
                 self.qtApp.isdDownloading = False
                 self.dataToExcel.downloadedClass += f"{__class}\n"
-                self.dataToExcel.datas.append({"_data":self.dataToExcel.data,"_class":f"{__class[1:]}{self.qtApp.subject[0]}","_names":self.dataToExcel.names,"_codes":self.dataToExcel.codes})
+                self.dataToExcel.datas.append({"_data":self.dataToExcel.data,"_class":f"{__class[1:]}{self.qtApp.subject[0]}","_classCode":__class,"_names":self.dataToExcel.names,"_codes":self.dataToExcel.codes})
             
             self.finished.emit(self.dataToExcel.datas)
         except Exception as e:
             self.error.emit(f"下载数据时出错: {str(e)}")
+
+class AnswerImageThread(QThread):
+    """下载每个学生每题的答卷图片"""
+    progress = pyqtSignal(int)      # 0-100
+    done = pyqtSignal(int, int, int, int, str)  # 已保存图片数、任务数、失败数、匹配数、映射表路径
+    error = pyqtSignal(str)
+
+    def __init__(self, qtApp, datas, save_dir, max_workers=6, ths=None, record_map=None):
+        super().__init__()
+        self.qtApp = qtApp
+        self.datas = datas
+        self.save_dir = save_dir
+        self.max_workers = max_workers
+        self.ths = ths if ths else list(qtApp.ths)
+        self.record_map = record_map or {}
+
+    @staticmethod
+    def _safe_name(name):
+        for ch in '\\/:*?"<>|':
+            name = name.replace(ch, "_")
+        return name.strip() or "未知"
+
+    def _download_one(self, exam_dir, class_code, th, code, name):
+        """下载一个学生一道题的答卷，返回(实际保存的图片数, 映射行列表)"""
+        urls = self.qtApp.getAnswerPaper(code, th)
+        rows = []
+        if not urls:
+            return 0, rows
+        th_dir = os.path.join(exam_dir, class_code, f"第{th}题")
+        os.makedirs(th_dir, exist_ok=True)
+        saved = 0
+        for i, url in enumerate(urls):
+            suffix = "" if len(urls) == 1 else f"_{i + 1}"
+            path = os.path.join(th_dir, f"{code}_{self._safe_name(name)}{suffix}.jpg")
+            key = image_key(url)
+            info = self.record_map.get(key) or {}
+            crop = key[1] if key else None
+            rows.append({
+                "班级": class_code,
+                "考号": code,
+                "姓名": name,
+                "题号": f"第{th}题",
+                "图片ID": info.get("Id", ""),
+                "记录GUID": info.get("Guid", ""),
+                "原图UUID": key[0] if key else "",
+                "裁剪参数": f"x_{crop[0]},y_{crop[1]},w_{crop[2]},h_{crop[3]}" if crop else "",
+                "文件名": os.path.basename(path),
+            })
+            if os.path.exists(path):
+                saved += 1
+                continue
+            resp = requests.get(url, timeout=20, verify=False)
+            if resp.status_code == 200 and resp.content:
+                with open(path, "wb") as f:
+                    f.write(resp.content)
+                saved += 1
+        return saved, rows
+
+    def run(self):
+        exam_dir = os.path.join(self.save_dir, f"{self.qtApp.examName}_答卷图片")
+        tasks = []
+        for data in self.datas:
+            class_code = data.get("_classCode") or data.get("_class")
+            codes = data.get("_codes") or []
+            names = data.get("_names") or []
+            if not codes:  # 未提供学生名单时，按班级自动获取
+                students = self.qtApp.getStudents(class_code, self.qtApp.subject, self.ths[0])
+                codes = [c for c, _ in students]
+                names = [n for _, n in students]
+            for th in self.ths:
+                for code, name in zip(codes, names):
+                    tasks.append((class_code, th, code, name))
+
+        total = len(tasks)
+        if total == 0:
+            self.done.emit(0, 0, 0, 0, "")
+            return
+
+        finished = saved_total = failed = 0
+        rows_all = []
+        lock = threading.Lock()
+        try:
+            with ThreadPoolExecutor(max_workers=self.max_workers) as pool:
+                futures = [
+                    pool.submit(self._download_one, exam_dir, class_code, th, code, name)
+                    for class_code, th, code, name in tasks
+                ]
+                for future in as_completed(futures):
+                    try:
+                        saved_count, rows = future.result()
+                        saved_total += saved_count
+                        rows_all.extend(rows)
+                    except Exception as e:
+                        failed += 1
+                        print(f"答卷图片下载失败: {e}")
+                    with lock:
+                        finished += 1
+                        self.progress.emit(int(100 * finished / total))
+
+            rows_all.sort(key=lambda r: (r["班级"], r["题号"], r["考号"]))
+            os.makedirs(exam_dir, exist_ok=True)
+            csv_path = os.path.join(exam_dir, "姓名ID映射.csv")
+            with open(csv_path, "w", encoding="utf-8-sig", newline="") as f:
+                writer = csv.DictWriter(f, fieldnames=[
+                    "班级", "考号", "姓名", "题号", "图片ID", "记录GUID",
+                    "原图UUID", "裁剪参数", "文件名",
+                ])
+                writer.writeheader()
+                writer.writerows(rows_all)
+            matched = sum(1 for row in rows_all if row["图片ID"])
+            self.done.emit(saved_total, total, failed, matched, csv_path)
+        except Exception as e:
+            self.error.emit(f"下载答卷图片时出错: {e}")
+
 
 class QiTianApp(QObject):
     token = ''
@@ -105,6 +252,8 @@ class QiTianApp(QObject):
     isdDownloading = False
     seachbtn = None
     successExamList = False
+    answerImageThread = None
+    _answerImagesDir = ""
     qitian_init_completed = pyqtSignal(str)
     grade_changed = pyqtSignal(str)  # 年级变化信号，参数为年级字符串如 "7", "8", "9"
 
@@ -773,6 +922,130 @@ class QiTianApp(QObject):
 
         return (f'第{self.ths[index]}题', list_score)
 
+    @retry(exceptions=requests.exceptions.RequestException, tries=3, delay=1, max_delay=5, backoff=1.5)
+    def getAnswerPaper(self, studentCode, th):
+        """获取某个学生某道题的答卷图片，返回图片URL列表"""
+        url = "https://teacherapi.7net.cc/api/PaperAnalysis/GetAnswerPaper"
+        payload = {
+            "schoolGuid": f"{self.schoolGuid}",
+            "examGuid": f"{self.examGuid}",
+            "studentCode": f"{studentCode}",
+            "subject": f"{self.subject}",
+            "th": f"{th}",
+            "source": ""
+        }
+        headers = {
+            "cookie": f"aliyungf_tc={self.cookie}",
+            "content-type": "application/json; charset=utf-8",
+            "user-agent": "Mozilla/5.0 (Linux; Android 12; PHY110 Build/V417IR; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/101.0.4951.61 Safari/537.36 septnet browser",
+            "check-webp": "true",
+            "Token": f"{self.token}",
+            "Version": "3.3.0",
+            "Host": "teacherapi.7net.cc",
+            "Connection": "Keep-Alive",
+            "Accept-Encoding": "gzip"
+        }
+        response = requests.request("POST", url, json=payload, headers=headers, verify=False, timeout=10)
+        response.raise_for_status()
+        return (response.json().get("data") or {}).get("url") or []
+
+    def getQuestionList(self, subject, classCode):
+        """获取指定科目、班级的题号列表，不修改当前实例状态"""
+        url = "https://teacherapi.7net.cc/api/PaperAnalysis/GetScenes"
+        payload = {
+            "schoolGuid": f"{self.schoolGuid}",
+            "classCode": f"{classCode}",
+            "subject": f"{subject}",
+            "examGuid": f"{self.examGuid}"
+        }
+        json_payload = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+        headers = {
+            "cookie": f"aliyungf_tc={self.cookie}",
+            "content-type": "application/json;charset=utf-8",
+            "user-agent": "Mozilla/5.0 (Linux; Android 12; PHY110 Build/V417IR; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/101.0.4951.61 Safari/537.36 septnet browser",
+            "check-webp": "true",
+            "Token": f"{self.token}",
+            "Version": "3.3.0",
+            "Host": "teacherapi.7net.cc",
+            "Connection": "Keep-Alive",
+            "Accept-Encoding": "gzip"
+        }
+        response = requests.request("POST", url, data=json_payload, headers=headers, verify=False, timeout=15)
+        response.raise_for_status()
+        return response.json()["data"]["itemScore"]["ths"]
+
+    @retry(exceptions=requests.exceptions.RequestException, tries=3, delay=1, max_delay=5, backoff=1.5)
+    def getStudents(self, classCode, subject, th):
+        """获取某班某题的学生名单，返回[(考号, 姓名), ...]"""
+        url = "https://teacherapi.7net.cc/api/PaperAnalysis/GetAnswerEntity"
+        payload = {
+            "schoolGuid": f"{self.schoolGuid}",
+            "classCode": f"{classCode}",
+            "subject": f"{subject}",
+            "examGuid": f"{self.examGuid}",
+            "th": f"{th}",
+            "obj": "true"
+        }
+        headers = {
+            "cookie": f"aliyungf_tc={self.cookie}",
+            "content-type": "application/json",
+            "user-agent": "Mozilla/5.0 (Linux; Android 12; PHY110 Build/V417IR; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/101.0.4951.61 Safari/537.36 septnet browser",
+            "check-webp": "true",
+            "Token": f"{self.token}",
+            "Version": "3.3.0",
+            "Host": "teacherapi.7net.cc",
+            "Connection": "Keep-Alive",
+            "Accept-Encoding": "gzip"
+        }
+        response = requests.request("POST", url, json=payload, headers=headers, verify=False, timeout=10)
+        response.raise_for_status()
+        students, seen = [], set()
+        for group in (response.json().get("data") or {}).get("details") or []:
+            for item in group.get("list") or []:
+                code = item.get("code")
+                if code and code not in seen:
+                    seen.add(code)
+                    students.append((code, item.get("name", "")))
+        return students
+
+    def startAnswerImages(self, datas, save_dir, ths=None, record_map=None):
+        """启动答卷图片下载线程"""
+        if self.answerImageThread and self.answerImageThread.isRunning():
+            return
+        self._answerImagesDir = os.path.join(save_dir, f"{self.examName}_答卷图片")
+        if self.progressBar:
+            self.progressBar.setValue(0)
+        if self.seachbtn:
+            self.seachbtn.setEnabled(False)
+        self.answerImageThread = AnswerImageThread(self, datas, save_dir, ths=ths, record_map=record_map)
+        self.answerImageThread.progress.connect(self.updateProgress)
+        self.answerImageThread.done.connect(self._on_answer_images_done)
+        self.answerImageThread.error.connect(self._on_answer_images_error)
+        self.answerImageThread.start()
+
+    def _on_answer_images_done(self, saved, total, failed, matched, csv_path):
+        if self.seachbtn:
+            self.seachbtn.setEnabled(True)
+        if self.progressBar:
+            self.progressBar.setValue(100)
+        msg = (
+            f"答卷图片下载完成\n已保存 {saved} 张，共 {total} 个学生题目，失败 {failed} 个\n"
+            f"姓名/ID 匹配 {matched} 条\n保存位置：{self._answerImagesDir}"
+        )
+        if csv_path:
+            msg += f"\n映射表：{csv_path}"
+        QMessageBox.information(
+            None,
+            "通知",
+            msg,
+            QMessageBox.StandardButton.Ok
+        )
+
+    def _on_answer_images_error(self, error_msg):
+        if self.seachbtn:
+            self.seachbtn.setEnabled(True)
+        QMessageBox.critical(None, "错误", error_msg, QMessageBox.StandardButton.Ok)
+
 
 class DataToExcel():
     """传入参数：考试名称"""
@@ -1042,6 +1315,8 @@ class DataToExcel():
                 f"最后保存数据\n{self.downloadedClass}",
                 QMessageBox.StandardButton.Ok
             )
+            # 表格保存完成后，继续下载每个学生每题的答卷图片
+            qtApp.startAnswerImages(self.datas, save_dir)
         except Exception as e:
             print(f"保存文件时出错: {str(e)}")
             QMessageBox.critical(
@@ -1095,7 +1370,7 @@ class DataToExcel():
                         return
                 qtApp.isdDownloading = False
                 self.downloadedClass += f"{__class}\n"
-                self.datas.append({"_data":self.data,"_class":f"{__class[1:]}{qtApp.subject[0]}","_names":self.names,"_codes":self.codes})
+                self.datas.append({"_data":self.data,"_class":f"{__class[1:]}{qtApp.subject[0]}","_classCode":__class,"_names":self.names,"_codes":self.codes})
 
         except IOError:
             print("-------getdata is wrong--------")
