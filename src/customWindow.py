@@ -102,7 +102,7 @@ class AnswerImageDialog(QDialog):
         super().__init__(parent)
         self.qtApp = qtApp
         self.setWindowTitle("下载答卷图片")
-        self.setFixedSize(420, 620)
+        self.setFixedSize(660, 560)
         self.setStyleSheet(
             "QDialog{background-color:#3e4d52;}"
             "QLabel{color:white;font-size:11pt;}"
@@ -130,25 +130,34 @@ class AnswerImageDialog(QDialog):
         subject_row.addWidget(self.subject_combo, 1)
         layout.addLayout(subject_row)
 
-        class_group = QGroupBox("班级")
-        class_layout = QVBoxLayout(class_group)
+        self.class_group = QGroupBox("班级")
+        class_layout = QVBoxLayout(self.class_group)
+        class_layout.setContentsMargins(8, 20, 8, 8)
+        class_layout.setSpacing(12)
         self.select_all_classes = QCheckBox("全选")
         class_layout.addWidget(self.select_all_classes)
         self.class_list = QListWidget()
-        self.class_list.setFixedHeight(120)
+        self.class_list.setMinimumHeight(180)
         class_layout.addWidget(self.class_list)
-        layout.addWidget(class_group)
 
         th_group = QGroupBox("题号")
         th_layout = QVBoxLayout(th_group)
+        th_layout.setContentsMargins(8, 20, 8, 8)
+        th_layout.setSpacing(12)
         self.select_all_ths = QCheckBox("全选")
         th_layout.addWidget(self.select_all_ths)
         self.th_list = QListWidget()
+        self.th_list.setMinimumHeight(180)
         th_layout.addWidget(self.th_list)
-        layout.addWidget(th_group, 1)
+
+        selection_row = QHBoxLayout()
+        selection_row.setSpacing(10)
+        selection_row.addWidget(self.class_group, 1)
+        selection_row.addWidget(th_group, 1)
+        layout.addLayout(selection_row, 1)
 
         records_row = QHBoxLayout()
-        records_row.addWidget(QLabel("记录文件:"))
+        records_row.addWidget(QLabel("比对文件:"))
         self.records_edit = QLineEdit()
         self.records_edit.setReadOnly(True)
         self.records_edit.setPlaceholderText("选择 download_records.json")
@@ -220,8 +229,13 @@ class AnswerImageDialog(QDialog):
         ]
 
     def load_questions(self):
-        """按当前科目和第一个选中班级获取题号"""
+        """按当前科目和第一个选中班级获取题号（未勾选班级时用第一个班级）"""
         classes = self.selected_classes()
+        if not classes:
+            classes = [
+                self.class_list.item(i).text()
+                for i in range(self.class_list.count())
+            ]
         if not classes:
             self.th_list.clear()
             return
@@ -240,11 +254,11 @@ class AnswerImageDialog(QDialog):
             self.th_list.addItem(item)
 
     def accept(self):
-        if not self.selected_classes():
-            QMessageBox.warning(self, "提示", "请至少选择一个班级")
-            return
         if not self.selected_ths():
             QMessageBox.warning(self, "提示", "请至少选择一个题号")
+            return
+        if not self.selected_classes():
+            QMessageBox.warning(self, "提示", "请至少选择一个班级")
             return
         records_path = self.records_edit.text().strip()
         if not records_path or not os.path.isfile(records_path):
@@ -258,12 +272,12 @@ class AnswerImageDialog(QDialog):
             for i in range(self.th_list.count())
             if self.th_list.item(i).checkState() == Qt.CheckState.Checked
         ]
-        return (
-            self.subject_combo.currentText(),
-            self.selected_classes(),
-            ths,
-            self.records_edit.text().strip(),
-        )
+        return {
+            "subject": self.subject_combo.currentText(),
+            "classes": self.selected_classes(),
+            "ths": ths,
+            "records_path": self.records_edit.text().strip(),
+        }
 
 
 class ContentWidget(QWidget):
@@ -587,24 +601,28 @@ class ContentWidget(QWidget):
         )
         if dialog.exec() != QDialog.DialogCode.Accepted:
             return
-        subject, classes, ths, records_path = dialog.get_result()
-        if not classes or not ths:
-            QMessageBox.warning(self, '提示', '请至少选择一个班级和一个题号')
-            return
-
-        try:
-            record_map = load_record_map(records_path)
-        except Exception as e:
-            QMessageBox.warning(self, '提示', f'读取记录文件失败: {e}')
+        result = dialog.get_result()
+        if not result["ths"]:
+            QMessageBox.warning(self, '提示', '请至少选择一个题号')
             return
 
         save_dir = QFileDialog.getExistingDirectory(self, "选择保存文件夹", "")
         if not save_dir:
             return
 
-        self.qtApp.subject = subject
+        classes = result["classes"]
+        if not classes:
+            QMessageBox.warning(self, '提示', '请至少选择一个班级')
+            return
+        try:
+            record_map = load_record_map(result["records_path"])
+        except Exception as e:
+            QMessageBox.warning(self, '提示', f'读取记录文件失败: {e}')
+            return
+
+        self.qtApp.subject = result["subject"]
         datas = [{"_classCode": f"A{name}"} for name in classes]
-        self.qtApp.startAnswerImages(datas, save_dir, ths=ths, record_map=record_map)
+        self.qtApp.startAnswerImages(datas, save_dir, ths=result["ths"], record_map=record_map)
 
 
     def handle_init_qtApp(self,logoinfo_):

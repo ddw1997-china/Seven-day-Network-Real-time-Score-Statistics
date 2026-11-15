@@ -4,7 +4,6 @@ import os
 import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Optional
-from urllib.parse import unquote
 
 from PyQt6.QtWidgets import ( QPushButton, QMessageBox, QFileDialog, QProgressBar)
 from PyQt6.QtCore import Qt, QObject, pyqtSignal, QThread
@@ -24,18 +23,15 @@ CROP_RE = re.compile(r"crop,x_(\d+),y_(\d+),w_(\d+),h_(\d+)")
 
 
 def image_key(url):
-    """提取图片的 UUID + 裁剪参数，用于跨接口匹配同一张图"""
+    """提取图片原始 UUID，仅按 UUID 与 download_records.json 匹配"""
     if not url:
         return None
     match = IMAGE_UUID_RE.search(url)
-    if not match:
-        return None
-    crop = CROP_RE.search(url)
-    return match.group(1).lower(), crop.groups() if crop else None
+    return match.group(1).lower() if match else None
 
 
 def load_record_map(path):
-    """读取 download_records.json，返回 {图片键: {'Id': ..., 'Guid': ...}}"""
+    """读取 download_records.json，返回 {原图UUID: {'Id': ..., 'Guid': ...}}"""
     with open(path, encoding="utf-8-sig") as f:
         records = json.load(f)
     mapping = {}
@@ -47,6 +43,7 @@ def load_record_map(path):
                 "Guid": str(record.get("Guid", "")),
             }
     return mapping
+
 
 
 class DataDownloadThread(QThread):
@@ -145,15 +142,16 @@ class AnswerImageThread(QThread):
         rows = []
         if not urls:
             return 0, rows
+        saved = 0
         th_dir = os.path.join(exam_dir, class_code, f"第{th}题")
         os.makedirs(th_dir, exist_ok=True)
-        saved = 0
         for i, url in enumerate(urls):
             suffix = "" if len(urls) == 1 else f"_{i + 1}"
             path = os.path.join(th_dir, f"{code}_{self._safe_name(name)}{suffix}.jpg")
             key = image_key(url)
             info = self.record_map.get(key) or {}
-            crop = key[1] if key else None
+            crop = CROP_RE.search(url)
+            crop_args = crop.groups() if crop else None
             rows.append({
                 "班级": class_code,
                 "考号": code,
@@ -161,8 +159,8 @@ class AnswerImageThread(QThread):
                 "题号": f"第{th}题",
                 "图片ID": info.get("Id", ""),
                 "记录GUID": info.get("Guid", ""),
-                "原图UUID": key[0] if key else "",
-                "裁剪参数": f"x_{crop[0]},y_{crop[1]},w_{crop[2]},h_{crop[3]}" if crop else "",
+                "原图UUID": key or "",
+                "裁剪参数": f"x_{crop_args[0]},y_{crop_args[1]},w_{crop_args[2]},h_{crop_args[3]}" if crop_args else "",
                 "文件名": os.path.basename(path),
             })
             if os.path.exists(path):
@@ -177,6 +175,7 @@ class AnswerImageThread(QThread):
 
     def run(self):
         exam_dir = os.path.join(self.save_dir, f"{self.qtApp.examName}_答卷图片")
+        os.makedirs(exam_dir, exist_ok=True)
         tasks = []
         for data in self.datas:
             class_code = data.get("_classCode") or data.get("_class")
@@ -218,16 +217,31 @@ class AnswerImageThread(QThread):
 
             rows_all.sort(key=lambda r: (r["班级"], r["题号"], r["考号"]))
             os.makedirs(exam_dir, exist_ok=True)
-            csv_path = os.path.join(exam_dir, "姓名ID映射.csv")
-            with open(csv_path, "w", encoding="utf-8-sig", newline="") as f:
-                writer = csv.DictWriter(f, fieldnames=[
-                    "班级", "考号", "姓名", "题号", "图片ID", "记录GUID",
-                    "原图UUID", "裁剪参数", "文件名",
-                ])
-                writer.writeheader()
-                writer.writerows(rows_all)
+            groups = {}
+            for row in rows_all:
+                groups.setdefault((row["班级"], row["题号"]), []).append(row)
+            csv_paths = []
+            for (class_code, th_label), rows in groups.items():
+                # 映射表写到该班级该题号的图片目录里
+                folder = os.path.join(exam_dir, class_code, th_label)
+                os.makedirs(folder, exist_ok=True)
+                csv_path = os.path.join(folder, "姓名ID映射.csv")
+                with open(csv_path, "w", encoding="utf-8-sig", newline="") as f:
+                    writer = csv.DictWriter(f, fieldnames=[
+                        "班级", "考号", "姓名", "题号", "图片ID", "记录GUID",
+                        "原图UUID", "裁剪参数", "文件名",
+                    ])
+                    writer.writeheader()
+                    writer.writerows(rows)
+                csv_paths.append(csv_path)
+            if len(csv_paths) == 1:
+                csv_info = csv_paths[0]
+            elif csv_paths:
+                csv_info = f"{exam_dir} 下各班级/题号目录（共 {len(csv_paths)} 个）"
+            else:
+                csv_info = ""
             matched = sum(1 for row in rows_all if row["图片ID"])
-            self.done.emit(saved_total, total, failed, matched, csv_path)
+            self.done.emit(saved_total, total, failed, matched, csv_info)
         except Exception as e:
             self.error.emit(f"下载答卷图片时出错: {e}")
 
@@ -1044,8 +1058,10 @@ class QiTianApp(QObject):
     def _on_answer_images_error(self, error_msg):
         if self.seachbtn:
             self.seachbtn.setEnabled(True)
+        if self.progressBar:
+            self.progressBar.setRange(0, 100)
+            self.progressBar.setValue(0)
         QMessageBox.critical(None, "错误", error_msg, QMessageBox.StandardButton.Ok)
-
 
 class DataToExcel():
     """传入参数：考试名称"""

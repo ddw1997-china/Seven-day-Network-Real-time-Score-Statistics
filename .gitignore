@@ -76,3 +76,6 @@ node_modules/
 
 # 本地工具脚本及打包产物
 mark_filter_tool.py
+
+# 本地运行调试目录
+.run/
